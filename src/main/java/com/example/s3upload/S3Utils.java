@@ -2,6 +2,7 @@ package com.example.s3upload;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.springframework.stereotype.Service;
 
@@ -36,5 +37,12 @@ public class S3Utils {
 
     public URL getFileLocation(String bucketName, String filename) {
         return amazonS3.getUrl(bucketName, filename);
+    }
+
+    public URL generatePreSignedUrl(String bucketName, String filename) {
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, filename)
+                        .withMethod(com.amazonaws.HttpMethod.GET);
+        return amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
     }
 }

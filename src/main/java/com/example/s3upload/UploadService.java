@@ -61,7 +61,8 @@ public class UploadService {
             throw new IllegalStateException("Failed to upload file", e);
         }
 
-        String link = s3Utils.getFileLocation(BUCKET_NAME, filename).toString();
+//        String link = s3Utils.getFileLocation(BUCKET_NAME, filename).toString();
+        String link = s3Utils.generatePreSignedUrl(BUCKET_NAME, filename).toString();
 
         return new S3FileInfo(link, filename);
     }

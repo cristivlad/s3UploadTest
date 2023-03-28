@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-public class RestUpload {
+public class RestUploadController {
 
-    public RestUpload(UploadService uploadService) {
+    public RestUploadController(UploadService uploadService) {
         this.uploadService = uploadService;
     }
 
