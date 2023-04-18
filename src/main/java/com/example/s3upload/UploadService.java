@@ -44,7 +44,7 @@ public class UploadService {
     }
 
     @Transactional
-    private S3FileInfo upload(MultipartFile file) {
+    public S3FileInfo upload(MultipartFile file) {
         if (file.isEmpty())
             throw new IllegalStateException("Cannot upload empty file");
 
