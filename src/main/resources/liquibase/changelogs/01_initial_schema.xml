@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <property name="now" value="now()" dbms="mysql"/>
+    <property name="autoincrement" value="true" dbms="mysql"/>
+    <property name="floatType" value="float" dbms="mysql"/>
+
+    <changeSet id="01-create_customer" author="Cristiii">
+        <createTable tableName="customers">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="address" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="02-create_file_meta" author="Cristiii">
+        <createTable tableName="file_meta">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="file_name" type="varchar(255)"/>
+            <column name="file_type" type="longtext"/>
+            <column name="version" type="varchar(255)"/>
+            <column name="uploader" type="varchar(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="03-create_kyc_data" author="Cristiii">
+        <createTable tableName="kyc_data">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="receive_from" type="varchar(255)"/>
+            <column name="account_number" type="varchar(255)">
+                <constraints unique="true"/>
+            </column>
+            <column name="segment" type="varchar(255)"/>
+            <column name="number" type="varchar(255)"/>
+            <column name="typeform_reference" type="varchar(255)"/>
+            <column name="first_name" type="varchar(255)"/>
+            <column name="last_name" type="varchar(255)"/>
+            <column name="email" type="varchar(255)"/>
+            <column name="uae_resident" type="boolean"/>
+            <column name="nationality" type="varchar(255)"/>
+            <column name="purpose_of_account" type="varchar(255)"/>
+            <column name="monthly_income" type="varchar(255)"/>
+            <column name="amount_cash_deposit" type="varchar(255)"/>
+            <column name="reason_cash_deposit" type="varchar(255)"/>
+            <column name="expected_monthly_transaction_amount" type="varchar(255)"/>
+            <column name="eid_front" type="longtext"/>
+            <column name="eid_back" type="longtext"/>
+            <column name="passport" type="longtext"/>
+            <column name="visa" type="longtext"/>
+            <column name="source_of_income" type="longtext"/>
+            <column name="sponsor_source_of_income" type="longtext"/>
+            <column name="salary_certificate" type="longtext"/>
+            <column name="company_trade_license" type="longtext"/>
+            <column name="business_bank_statement" type="longtext"/>
+            <column name="personal_bank_statement" type="longtext"/>
+            <column name="accommodation_type" type="varchar(255)"/>
+            <column name="proof_address_document" type="longtext"/>
+            <column name="title_deed" type="varchar(255)"/>
+            <column name="address" type="varchar(255)"/>
+            <column name="address_line_2" type="varchar(255)"/>
+            <column name="city" type="varchar(255)"/>
+            <column name="state" type="varchar(255)"/>
+            <column name="postal_code" type="varchar(255)"/>
+            <column name="country" type="varchar(255)"/>
+            <column name="moved_in_date" type="datetime"/>
+            <column name="undertaking" type="varchar(255)"/>
+            <column name="start_date" type="datetime"/>
+            <column name="submit_date" type="datetime"/>
+            <column name="status" type="varchar(255)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="04-create_kyc_data_error" author="Cristiii">
+        <createTable tableName="kyc_data_error">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="row_error" type="varchar(255)"/>
+            <column name="cause" type="varchar(255)"/>
+            <column name="account_number" type="varchar(255)"/>
+            <column name="created_on" type="datetime"/>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

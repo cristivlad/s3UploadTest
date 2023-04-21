@@ -63,9 +63,9 @@
             <version>5.2.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml-streaming</artifactId>
-            <version>5.2.0</version>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>4.21.1</version>
         </dependency>
 
 
