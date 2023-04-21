@@ -13,19 +13,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Objects.isNull;
 import static org.apache.poi.ss.usermodel.Row.MissingCellPolicy.CREATE_NULL_AS_BLANK;
 
 @Service
@@ -43,18 +39,18 @@ public class ExcelService {
     }
 
     public void loadExcel(MultipartFile file) {
-        try (InputStream fis = new BufferedInputStream(file.getInputStream());
+        try (var fis = new BufferedInputStream(file.getInputStream());
              var workbook = new XSSFWorkbook(fis)) {
             var sheet = workbook.getSheetAt(0);
             List<KycInputDto> inputDtoList = new ArrayList<>(sheet.getLastRowNum());
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 var row = sheet.getRow(rowIndex);
-                var accountNumber = getCellValue(row, 1).toString();
-                var movedInDate = convertToLocalDateTime(row, 36);
-                var startDate = convertToLocalDateTime(row, 38);
-                var submitDate = convertToLocalDateTime(row, 39);
-                if (StringUtils.isBlank(accountNumber) || startDate == null || submitDate == null) {
+                var accountNumber = getAccountNumber(row);
+                var movedInDate = convertToLocalDateTime(row, 36).orElse(null);
+                var startDate = convertToLocalDateTime(row, 38).orElse(null);
+                var submitDate = convertToLocalDateTime(row, 39).orElse(null);
+                if (StringUtils.isBlank(accountNumber) || Objects.isNull(startDate) || Objects.isNull(submitDate)) {
                     continue;
                 }
                 constructObjectAndAddToList(inputDtoList, row, accountNumber, movedInDate, startDate, submitDate);
@@ -64,16 +60,21 @@ public class ExcelService {
                 excelRepository.saveAll(assembler.assembleEntities(validDataList));
             }
         } catch (IOException e) {
-            KycDataError error = new KycDataError();
-            error.setCause(e.getMessage());
-            error.setRowError(file.getName());
-            error.setCreatedOn(LocalDateTime.now());
-            kycDataErrorRepository.save(error);
+            kycDataErrorRepository.save(createKycDataError(file.getName(), e.getMessage()));
+        }
+    }
+
+    private String getAccountNumber(XSSFRow row) {
+        try {
+            return getCellValue(row, 1).toString();
+        } catch (AccountNumberNullException e) {
+            kycDataErrorRepository.save(createKycDataError(String.valueOf(e.getRowNum()), e.getMessage()));
+            return "";
         }
     }
 
     private void constructObjectAndAddToList(List<KycInputDto> inputDtoList, XSSFRow row, String accountNumber, LocalDateTime movedInDate, LocalDateTime startDate, LocalDateTime submitDate) {
-        KycInputDto dto = KycInputDto.builder()
+        inputDtoList.add(KycInputDto.builder()
                 .receivedFrom(getCellValue(row, 0).toString())
                 .accountNumber(accountNumber)
                 .segment(getCellValue(row, 2).toString())
@@ -113,15 +114,13 @@ public class ExcelService {
                 .startDate(startDate)
                 .submitDate(submitDate)
                 .status("PENDING")
-                .build();
-        inputDtoList.add(dto);
+                .build());
     }
 
-    private LocalDateTime convertToLocalDateTime(XSSFRow row, int cellIndex) {
+    private Optional<LocalDateTime> convertToLocalDateTime(XSSFRow row, int cellIndex) {
         Date inputDate = extractDateValue(row, cellIndex);
-        if (isNull(inputDate))
-            return null;
-        return inputDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return Optional.ofNullable(inputDate)
+                .map(date -> LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
     }
 
     private Object getCellValue(XSSFRow row, int cellIndex) {
@@ -134,12 +133,7 @@ public class ExcelService {
                 if (!StringUtils.isBlank(o.toString())) {
                     return o.toString();
                 } else {
-                    KycDataError error = new KycDataError();
-                    error.setCause("Account number must not be null!");
-                    error.setRowError(String.valueOf(row.getRowNum()));
-                    error.setCreatedOn(LocalDateTime.now());
-                    kycDataErrorRepository.save(error);
-                    return "";
+                    throw new AccountNumberNullException("Account number must not be null!", row.getRowNum());
                 }
             }
             case 8 -> {
@@ -167,12 +161,7 @@ public class ExcelService {
             try {
                 return formatter.parse(date);
             } catch (ParseException e) {
-                KycDataError error = new KycDataError();
-                error.setRowError(String.valueOf(row.getRowNum()));
-                error.setCause(e.getMessage());
-                error.setAccountNumber(row.getCell(1).toString());
-                error.setCreatedOn(LocalDateTime.now());
-                kycDataErrorRepository.save(error);
+                kycDataErrorRepository.save(createKycDataError(String.valueOf(row.getCell(1)), e.getMessage()));
                 return null;
             }
         }
@@ -193,13 +182,8 @@ public class ExcelService {
     private List<KycInputDto> verifyDuplicateAccountNumbers(List<KycInputDto> inputDtoList) {
         List<String> strings = excelRepository.checkAccountNumberExists(inputDtoList.stream().map(KycInputDto::getAccountNumber).distinct().toList());
         List<KycDataError> duplicateAccountsOnFileErrors = checkDuplicateAccountsOnFile(inputDtoList.stream().map(KycInputDto::getAccountNumber).toList());
-        List<KycDataError> accountNumberAlreadyExists = strings.stream().map(account -> {
-            KycDataError error = new KycDataError();
-            error.setAccountNumber(account);
-            error.setCause("Account number already exists");
-            error.setCreatedOn(LocalDateTime.now());
-            return error;
-        }).toList();
+        List<KycDataError> accountNumberAlreadyExists = strings.stream()
+                .map(account -> createKycDataError(account, "Account number already exists")).toList();
 
         List<KycDataError> finalErrors = Stream.concat(duplicateAccountsOnFileErrors.stream(), accountNumberAlreadyExists.stream()).toList();
 
@@ -207,18 +191,22 @@ public class ExcelService {
         return inputDtoList.stream().distinct().filter(kycInputDto -> !strings.contains(kycInputDto.getAccountNumber())).toList();
     }
 
-    private List<KycDataError> checkDuplicateAccountsOnFile(List<String> inputDtoList) {
-        List<KycDataError> errorList = new ArrayList<>();
-        inputDtoList.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting())).forEach((key, value) -> {
-            if (value > 1) {
-                KycDataError error = new KycDataError();
-                error.setAccountNumber(key);
-                error.setCause("Duplicate account number on file");
-                error.setCreatedOn(LocalDateTime.now());
-                errorList.add(error);
-            }
-        });
-        return errorList;
+    private List<KycDataError> checkDuplicateAccountsOnFile(List<String> accountNumbers) {
+        Map<String, Long> countsByAccountNumber = accountNumbers.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        return countsByAccountNumber.entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(entry -> createKycDataError(entry.getKey(), "Duplicate account number on file"))
+                .collect(Collectors.toList());
+    }
+
+    private KycDataError createKycDataError(String accountNumber, String cause) {
+        KycDataError error = new KycDataError();
+        error.setAccountNumber(accountNumber);
+        error.setCause(cause);
+        error.setCreatedOn(LocalDateTime.now());
+        return error;
     }
 
     public Page<KycOutDto> searchKyc(KycSearchCriteriaDto searchCriteria, int pageSize, int pageNo) {
