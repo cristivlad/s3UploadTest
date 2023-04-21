@@ -26,7 +26,7 @@ public class UploadController {
     }
 
     @PostMapping(value = "/upload")
-    public String uploadFile(@RequestParam("file")MultipartFile multipartFile) {
+    public String uploadFile(@RequestParam("file") MultipartFile multipartFile) {
         uploadService.uploadFile(multipartFile);
         return "redirect:dashboard";
     }

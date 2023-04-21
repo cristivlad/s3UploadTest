@@ -30,7 +30,7 @@ public class UploadService {
     }
 
     @Transactional
-    private void checkAndSaveToDb(List<FileMeta> filesToUpload) {
+    public void checkAndSaveToDb(List<FileMeta> filesToUpload) {
         Optional<FileMeta> byName = fileMetaRepository.findByName(filesToUpload.get(0).getName());
         String filenames = filesToUpload.stream().map(FileMeta::getFileName).reduce((s, s2) -> s + ", " + s2).get();
         String path = filesToUpload.stream().map(FileMeta::getFilePath).reduce((s, s2) -> s + ", " + s2).get();
