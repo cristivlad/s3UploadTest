@@ -101,4 +101,10 @@
             <column name="created_on" type="datetime"/>
         </createTable>
     </changeSet>
+
+    <changeSet id="05-alter_kyc_data_error_add_column" author="Cristiii">
+        <addColumn tableName="kyc_data_error">
+            <column name="filename" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

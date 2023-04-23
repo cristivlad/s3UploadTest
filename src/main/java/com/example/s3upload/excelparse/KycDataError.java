@@ -21,5 +21,7 @@ public class KycDataError {
     private String cause;
     private String accountNumber;
     private LocalDateTime createdOn;
+    @Column(name = "filename")
+    private String filename;
 
 }

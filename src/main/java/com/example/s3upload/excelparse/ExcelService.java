@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.text.ParseException;
@@ -57,12 +56,12 @@ public class ExcelService {
                 }
                 constructObjectAndAddToList(inputDtoList, row, accountNumber, movedInDate, startDate, submitDate);
             }
-            List<KycInputDto> validDataList = verifyDuplicateAccountNumbers(inputDtoList);
+            List<KycInputDto> validDataList = verifyDuplicateAccountNumbers(inputDtoList, file.getName());
             if (!CollectionUtils.isEmpty(validDataList)) {
                 excelRepository.saveAll(assembler.assembleEntities(validDataList));
             }
         } catch (IOException e) {
-            kycDataErrorRepository.save(createKycDataError(file.getName(), e.getMessage()));
+            kycDataErrorRepository.save(createKycDataError(file.getName(), e.getMessage(), null));
         }
     }
 
@@ -70,7 +69,7 @@ public class ExcelService {
         try {
             return getCellValue(row, 1).toString().split("[.]")[0];
         } catch (AccountNumberNullException e) {
-            kycDataErrorRepository.save(createKycDataError(String.valueOf(e.getRowNum()), e.getMessage()));
+            kycDataErrorRepository.save(createKycDataError(String.valueOf(e.getRowNum()), e.getMessage(), row.getSheet().getSheetName()));
             return "";
         }
     }
@@ -163,7 +162,7 @@ public class ExcelService {
             try {
                 return formatter.parse(date);
             } catch (ParseException e) {
-                kycDataErrorRepository.save(createKycDataError(String.valueOf(row.getCell(1)), e.getMessage()));
+                kycDataErrorRepository.save(createKycDataError(String.valueOf(row.getCell(1)), e.getMessage(), row.getSheet().getSheetName()));
                 return null;
             }
         }
@@ -181,11 +180,11 @@ public class ExcelService {
         }
     }
 
-    private List<KycInputDto> verifyDuplicateAccountNumbers(List<KycInputDto> inputDtoList) {
+    private List<KycInputDto> verifyDuplicateAccountNumbers(List<KycInputDto> inputDtoList, String filename) {
         List<String> strings = excelRepository.checkAccountNumberExists(inputDtoList.stream().map(KycInputDto::getAccountNumber).distinct().toList());
-        List<KycDataError> duplicateAccountsOnFileErrors = checkDuplicateAccountsOnFile(inputDtoList.stream().map(KycInputDto::getAccountNumber).toList());
+        List<KycDataError> duplicateAccountsOnFileErrors = checkDuplicateAccountsOnFile(inputDtoList.stream().map(KycInputDto::getAccountNumber).toList(), filename);
         List<KycDataError> accountNumberAlreadyExists = strings.stream()
-                .map(account -> createKycDataError(account, "Account number already exists")).toList();
+                .map(account -> createKycDataError(account, "Account number already exists", filename)).toList();
 
         List<KycDataError> finalErrors = Stream.concat(duplicateAccountsOnFileErrors.stream(), accountNumberAlreadyExists.stream()).toList();
 
@@ -193,21 +192,22 @@ public class ExcelService {
         return inputDtoList.stream().distinct().filter(kycInputDto -> !strings.contains(kycInputDto.getAccountNumber())).toList();
     }
 
-    private List<KycDataError> checkDuplicateAccountsOnFile(List<String> accountNumbers) {
+    private List<KycDataError> checkDuplicateAccountsOnFile(List<String> accountNumbers, String filename) {
         Map<String, Long> countsByAccountNumber = accountNumbers.stream()
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
         return countsByAccountNumber.entrySet().stream()
                 .filter(entry -> entry.getValue() > 1)
-                .map(entry -> createKycDataError(entry.getKey(), "Duplicate account number on file"))
+                .map(entry -> createKycDataError(entry.getKey(), "Duplicate account number on file", filename))
                 .collect(Collectors.toList());
     }
 
-    private KycDataError createKycDataError(String accountNumber, String cause) {
+    private KycDataError createKycDataError(String accountNumber, String cause, String filename) {
         KycDataError error = new KycDataError();
         error.setAccountNumber(accountNumber);
         error.setCause(cause);
         error.setCreatedOn(LocalDateTime.now());
+        error.setFilename(filename);
         return error;
     }
 
@@ -229,7 +229,7 @@ public class ExcelService {
     }
 
     @Transactional
-    public void removeAccount(String accountNumber) throws AccountNotFoundException {
+    public void removeAccount(String accountNumber) {
         var kycData = excelRepository.findByAccountNumber(accountNumber);
 
         if (kycData.isEmpty()) {
