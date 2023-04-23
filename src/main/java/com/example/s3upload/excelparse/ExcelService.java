@@ -1,5 +1,6 @@
 package com.example.s3upload.excelparse;
 
+import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.text.ParseException;
@@ -66,7 +68,7 @@ public class ExcelService {
 
     private String getAccountNumber(XSSFRow row) {
         try {
-            return getCellValue(row, 1).toString();
+            return getCellValue(row, 1).toString().split("[.]")[0];
         } catch (AccountNumberNullException e) {
             kycDataErrorRepository.save(createKycDataError(String.valueOf(e.getRowNum()), e.getMessage()));
             return "";
@@ -226,4 +228,13 @@ public class ExcelService {
                         .build());
     }
 
+    @Transactional
+    public void removeAccount(String accountNumber) throws AccountNotFoundException {
+        var kycData = excelRepository.findByAccountNumber(accountNumber);
+
+        if (kycData.isEmpty()) {
+            throw new DataNotFoundException("Account not found");
+        }
+        excelRepository.deleteById(kycData.get().getId());
+    }
 }

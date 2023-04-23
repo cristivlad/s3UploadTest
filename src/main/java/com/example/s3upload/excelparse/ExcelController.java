@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.security.auth.login.AccountNotFoundException;
+
 @RestController
 public class ExcelController {
 
@@ -29,5 +31,11 @@ public class ExcelController {
         var kycPage = excelService.searchKyc(searchCriteria, pageSize, pageNo);
 
         return ResponseEntity.ok(kycPage);
+    }
+
+    @DeleteMapping("/remove-account/{accountNumber}")
+    public ResponseEntity<Void> removeAccount(@PathVariable String accountNumber) throws AccountNotFoundException {
+        excelService.removeAccount(accountNumber);
+        return ResponseEntity.ok().build();
     }
 }
