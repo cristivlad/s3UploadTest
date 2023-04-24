@@ -1,10 +1,7 @@
 package com.example.s3upload.excelparse;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "kyc_data")
 @Getter
-@Service
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

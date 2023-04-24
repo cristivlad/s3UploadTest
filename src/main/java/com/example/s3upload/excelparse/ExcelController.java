@@ -1,6 +1,7 @@
 package com.example.s3upload.excelparse;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +37,12 @@ public class ExcelController {
     @DeleteMapping("/remove-account/{accountNumber}")
     public ResponseEntity<Void> removeAccount(@PathVariable String accountNumber) throws AccountNotFoundException {
         excelService.removeAccount(accountNumber);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(value ="/update-account/{accountNumber}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<KycOutDto> updateAccount(@PathVariable String accountNumber, KycUpdateDto kycUpdateDto) throws AccountNotFoundException {
+        KycOutDto kycOutDto = excelService.updateAccount(accountNumber, kycUpdateDto);
         return ResponseEntity.ok().build();
     }
 }

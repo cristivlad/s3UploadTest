@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class KycOutDto {
+
     private String accountNumber;
     private String number;
     private String name;

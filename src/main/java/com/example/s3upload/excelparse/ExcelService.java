@@ -1,5 +1,6 @@
 package com.example.s3upload.excelparse;
 
+import com.example.s3upload.S3Utils;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -32,13 +34,17 @@ public class ExcelService {
     private final KycAssembler assembler;
     private final KycDataSpecification kycDataSpecification;
 
-    public ExcelService(ExcelRepository excelRepository, KycDataErrorRepository kycDataErrorRepository, KycAssembler assembler, KycDataSpecification kycDataSpecification) {
+    private final S3Utils s3Utils;
+
+    public ExcelService(ExcelRepository excelRepository, KycDataErrorRepository kycDataErrorRepository, KycAssembler assembler, KycDataSpecification kycDataSpecification, S3Utils s3Utils) {
         this.excelRepository = excelRepository;
         this.kycDataErrorRepository = kycDataErrorRepository;
         this.assembler = assembler;
         this.kycDataSpecification = kycDataSpecification;
+        this.s3Utils = s3Utils;
     }
 
+    @Transactional
     public void loadExcel(MultipartFile file) {
         try (var fis = new BufferedInputStream(file.getInputStream());
              var workbook = new XSSFWorkbook(fis)) {
@@ -230,11 +236,47 @@ public class ExcelService {
 
     @Transactional
     public void removeAccount(String accountNumber) {
-        var kycData = excelRepository.findByAccountNumber(accountNumber);
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
 
-        if (kycData.isEmpty()) {
-            throw new DataNotFoundException("Account not found");
+        excelRepository.deleteById(kycData.getId());
+    }
+
+    @Transactional
+    public KycOutDto updateAccount(String accountNumber, KycUpdateDto kycUpdateDto) {
+        List<String> pictureFields = Arrays.asList("eidFront", "eidBack", "passport", "visa", "sponsorSourceOfIncome", "salaryCertificate", "companyTradeLicense", "businessBankStatement", "personalBankStatement", "proofAddressDocument", "titleDeed");
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+
+        Field[] fields = kycUpdateDto.getClass().getDeclaredFields();
+        List<Field> fieldList = Arrays.stream(fields).filter(field -> {
+            try {
+                field.setAccessible(true);
+                return field.get(kycUpdateDto) != null;
+            } catch (IllegalAccessException e) {
+                return false;
+            }
+        }).collect(Collectors.toList());
+
+        for (Field field : fieldList) {
+            try {
+                field.setAccessible(true);
+                if (pictureFields.contains(field.getName())) {
+                    String pictureUrl = s3Utils.uploadMultipartFile((MultipartFile) field.get(kycUpdateDto), "", kycData.getAccountNumber(), "kyc-remediation", field.getName());
+                    String pictureUrlField = field.getName() + "Url";
+                    Field pictureUrlFieldObject = kycData.getClass().getDeclaredField(field.getName());
+                    pictureUrlFieldObject.setAccessible(true);
+                    pictureUrlFieldObject.set(kycData, pictureUrl);
+                } else {
+                    Field kycInfoField = kycData.getClass().getDeclaredField(field.getName());
+                    kycInfoField.setAccessible(true);
+                    kycInfoField.set(kycData, field.get(kycUpdateDto));
+                }
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
         }
-        excelRepository.deleteById(kycData.get().getId());
+
+        excelRepository.save(kycData);
+
+        return null;
     }
 }
