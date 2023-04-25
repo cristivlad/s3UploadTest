@@ -245,7 +245,7 @@ public class ExcelService {
 
     @Transactional
     public KycOutDto updateAccount(String accountNumber, KycUpdateDto kycUpdateDto) {
-        List<String> pictureFields = Arrays.asList("eidFront", "eidBack", "passport", "visa", "sponsorSourceOfIncome", "salaryCertificate", "companyTradeLicense", "businessBankStatement", "personalBankStatement", "proofAddressDocument", "titleDeed");
+
         var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
 
         Field[] fields = kycUpdateDto.getClass().getDeclaredFields();
@@ -263,7 +263,7 @@ public class ExcelService {
                 field.setAccessible(true);
                 if (Arrays.stream(KycRemediationFiles.values()).anyMatch(val -> val.getValue().equals(field.getName()))) {
                     String pictureUrl = s3Utils.uploadMultipartFile((MultipartFile) field.get(kycUpdateDto), "", kycData.getAccountNumber(), "kyc-remediation", field.getName());
-                    String pictureUrlField = field.getName() + "Url";
+
                     Field pictureUrlFieldObject = kycData.getClass().getDeclaredField(field.getName());
                     pictureUrlFieldObject.setAccessible(true);
                     pictureUrlFieldObject.set(kycData, pictureUrl);
@@ -298,8 +298,9 @@ public class ExcelService {
 
         int slashIndex = propertyValue.toString().lastIndexOf('/');
         int questionIndex = propertyValue.toString().lastIndexOf('?');
+        String filename = StringUtils.isBlank(propertyValue.toString()) ? "" : propertyValue.toString().substring(slashIndex + 1, questionIndex);
 
-        var deleteFileKey = "kyc-remediation/" + accountNumber + "/" + kycData.getEidFront().substring(slashIndex + 1, questionIndex);
+        var deleteFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
 
         s3Utils.deleteFile(deleteFileKey);
         setterMethod.invoke(kycData, "");
