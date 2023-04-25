@@ -1,5 +1,7 @@
 package com.example.s3upload.excelparse;
 
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.transfer.MultipleFileUpload;
 import com.example.s3upload.S3Utils;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
@@ -306,5 +308,29 @@ public class ExcelService {
         setterMethod.invoke(kycData, "");
 
         excelRepository.save(kycData);
+    }
+
+    public void moveFilesToBank(String accountNumber) throws IllegalAccessException {
+        String sourceBucket = "testjavacode1";
+        String destinationBucket = "newtestbucketlikebank";
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+
+        Field[] fields = kycData.getClass().getDeclaredFields();
+        for (var field : fields) {
+            field.setAccessible(true);
+            if (Arrays.stream(KycRemediationFiles.values()).anyMatch(val -> val.getValue().equals(field.getName()))) {
+                String fileUrl = (String) field.get(kycData);
+                if (StringUtils.isNotBlank(fileUrl)) {
+                    int slashIndex = fileUrl.lastIndexOf('/');
+                    int questionIndex = fileUrl.lastIndexOf('?');
+                    String filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
+
+                    var sourceFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
+                    var destinationFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
+
+                    s3Utils.moveFile(sourceBucket, sourceFileKey, destinationBucket, destinationFileKey);
+                }
+            }
+        }
     }
 }

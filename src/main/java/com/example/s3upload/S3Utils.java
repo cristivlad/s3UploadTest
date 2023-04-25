@@ -3,9 +3,8 @@ package com.example.s3upload;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.securitylake.model.S3Exception;
 import com.example.s3upload.excelparse.ApplicationException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -130,6 +129,16 @@ public class S3Utils {
             amazonS3.deleteObject(bucketName, sourceKey);
         } catch (Exception e) {
             log.error("Error deleting file from S3 bucket", e);
+        }
+    }
+
+    public String moveFile(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+        CopyObjectRequest copyObjectRequest = new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+        try {
+            return amazonS3.copyObject(copyObjectRequest).toString();
+        } catch (S3Exception exc) {
+            log.error("Error copying file from S3 bucket", exc);
+            throw new ApplicationException("Unable to upload documents. Please try again later.");
         }
     }
 }

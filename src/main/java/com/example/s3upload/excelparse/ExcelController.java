@@ -57,4 +57,10 @@ public class ExcelController {
         excelService.removeFile(accountNumber, name);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping(value = "/accounts/{accountNumber}/move-files")
+    public ResponseEntity<Void> moveFilesToBank(@PathVariable String accountNumber) throws IllegalAccessException {
+        excelService.moveFilesToBank(accountNumber);
+        return ResponseEntity.ok().build();
+    }
 }
