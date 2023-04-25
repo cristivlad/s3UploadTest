@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.lang.reflect.InvocationTargetException;
+
 @RestController
 public class ExcelController {
 
@@ -47,6 +49,12 @@ public class ExcelController {
     @PutMapping("/accounts/{accountNumber}/status")
     public ResponseEntity<Void> updateStatus(@PathVariable String accountNumber, @RequestParam String status) {
         excelService.updateStatus(accountNumber, status);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/accounts/{accountNumber}/files")
+    public ResponseEntity<Void> removeFile(@PathVariable String accountNumber, @RequestParam String name) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        excelService.removeFile(accountNumber, name);
         return ResponseEntity.noContent().build();
     }
 }

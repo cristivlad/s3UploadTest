@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -284,6 +286,24 @@ public class ExcelService {
         var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
 
         kycData.setStatus(status);
+        excelRepository.save(kycData);
+    }
+
+    public void removeFile(String accountNumber, String name) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        Class<?> returnedObjectType = kycData.getClass();
+        Method getterMethod = returnedObjectType.getMethod("get" + name.substring(0, 1).toUpperCase() + name.substring(1));
+        Method setterMethod = returnedObjectType.getMethod("set" + name.substring(0, 1).toUpperCase() + name.substring(1), String.class);
+        Object propertyValue = getterMethod.invoke(kycData);
+
+        int slashIndex = propertyValue.toString().lastIndexOf('/');
+        int questionIndex = propertyValue.toString().lastIndexOf('?');
+
+        var deleteFileKey = "kyc-remediation/" + accountNumber + "/" + kycData.getEidFront().substring(slashIndex + 1, questionIndex);
+
+        s3Utils.deleteFile(deleteFileKey);
+        setterMethod.invoke(kycData, "");
+
         excelRepository.save(kycData);
     }
 }

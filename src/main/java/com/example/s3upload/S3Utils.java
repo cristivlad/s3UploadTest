@@ -124,4 +124,12 @@ public class S3Utils {
             throw new ApplicationException("Unable to upload documents. Please try again later.");
         }
     }
+
+    public void deleteFile(String sourceKey) {
+        try {
+            amazonS3.deleteObject(bucketName, sourceKey);
+        } catch (Exception e) {
+            log.error("Error deleting file from S3 bucket", e);
+        }
+    }
 }
