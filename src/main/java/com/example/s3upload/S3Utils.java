@@ -67,7 +67,7 @@ public class S3Utils {
         String fileUrl;
         try {
             uploadFileToS3Bucket(new StringBuilder().append(directoryPrefix)
-                    .append(directory).append("/").append(customerId).toString(), file);
+                    .append(directory).append("/").append(customerId).append("/").append(file.getName()).toString(), file);
             fileUrl = generatePresignedUrl(directoryPrefix, customerId, directory, file.getName());
         } catch (Exception e) {
             log.error("Error uploading file to S3 bucket", e);
@@ -85,7 +85,7 @@ public class S3Utils {
             StringBuilder keyUrl = new StringBuilder();
             keyUrl.append(bucketName)
                     .append("/").append(directoryPrefix)
-                    .append(path).append(customerId)
+                    .append(path).append("/").append(customerId)
                     .append("/").append(filename);
 
             Date expiration = new Date();
