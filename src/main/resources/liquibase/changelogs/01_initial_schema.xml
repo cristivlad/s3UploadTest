@@ -107,4 +107,10 @@
             <column name="filename" type="varchar(255)"/>
         </addColumn>
     </changeSet>
+
+    <changeSet id="06-alter-kyc-data-add-column" author="Cristiii">
+        <addColumn tableName="kyc_data">
+            <column name="created_on" type="datetime" defaultValue="now()"></column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

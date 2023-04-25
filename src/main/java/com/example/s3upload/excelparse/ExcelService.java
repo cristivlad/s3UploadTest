@@ -259,7 +259,7 @@ public class ExcelService {
         for (Field field : fieldList) {
             try {
                 field.setAccessible(true);
-                if (pictureFields.contains(field.getName())) {
+                if (Arrays.stream(KycRemediationFiles.values()).anyMatch(val -> val.getValue().equals(field.getName()))) {
                     String pictureUrl = s3Utils.uploadMultipartFile((MultipartFile) field.get(kycUpdateDto), "", kycData.getAccountNumber(), "kyc-remediation", field.getName());
                     String pictureUrlField = field.getName() + "Url";
                     Field pictureUrlFieldObject = kycData.getClass().getDeclaredField(field.getName());

@@ -87,4 +87,6 @@ public class KycData {
     @Column(name = "submit_date")
     private LocalDateTime submitDate;
     private String status;
+    @Column(name= "created_on")
+    private LocalDateTime createdOn;
 }
