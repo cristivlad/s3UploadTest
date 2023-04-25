@@ -6,8 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.security.auth.login.AccountNotFoundException;
-
 @RestController
 public class ExcelController {
 
@@ -23,7 +21,7 @@ public class ExcelController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/search")
+    @GetMapping("/accounts/search")
     public ResponseEntity<Page<KycOutDto>> searchKyc(
             KycSearchCriteriaDto searchCriteria,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
@@ -34,15 +32,21 @@ public class ExcelController {
         return ResponseEntity.ok(kycPage);
     }
 
-    @DeleteMapping("/remove-account/{accountNumber}")
-    public ResponseEntity<Void> removeAccount(@PathVariable String accountNumber) throws AccountNotFoundException {
+    @DeleteMapping("/accounts/{accountNumber}")
+    public ResponseEntity<Void> removeAccount(@PathVariable String accountNumber) {
         excelService.removeAccount(accountNumber);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value ="/update-account/{accountNumber}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<KycOutDto> updateAccount(@PathVariable String accountNumber, KycUpdateDto kycUpdateDto) throws AccountNotFoundException {
-        KycOutDto kycOutDto = excelService.updateAccount(accountNumber, kycUpdateDto);
-        return ResponseEntity.ok().build();
+    @PutMapping(value ="/accounts/{accountNumber}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateAccount(@PathVariable String accountNumber, KycUpdateDto kycUpdateDto) {
+        excelService.updateAccount(accountNumber, kycUpdateDto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/accounts/{accountNumber}/status")
+    public ResponseEntity<Void> updateStatus(@PathVariable String accountNumber, @RequestParam String status) {
+        excelService.updateStatus(accountNumber, status);
+        return ResponseEntity.noContent().build();
     }
 }

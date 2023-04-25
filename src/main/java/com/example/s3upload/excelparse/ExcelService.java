@@ -279,4 +279,11 @@ public class ExcelService {
 
         return null;
     }
+
+    public void updateStatus(String accountNumber, String status) {
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+
+        kycData.setStatus(status);
+        excelRepository.save(kycData);
+    }
 }

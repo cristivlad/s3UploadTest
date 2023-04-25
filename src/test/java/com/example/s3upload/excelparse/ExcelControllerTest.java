@@ -16,14 +16,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import javax.security.auth.login.AccountNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -64,7 +64,6 @@ class ExcelControllerTest {
 
     @Test
     void searchKyc_returnsPageOfKycOutDtos() {
-        // Arrange
         KycSearchCriteriaDto searchCriteria = new KycSearchCriteriaDto();
         int pageSize = 10;
         int pageNo = 0;
@@ -76,11 +75,20 @@ class ExcelControllerTest {
 
         when(excelService.searchKyc(searchCriteria, pageSize, pageNo)).thenReturn(kycPage);
 
-        // Act
         ResponseEntity<Page<KycOutDto>> response = excelController.searchKyc(searchCriteria, pageSize, pageNo);
 
-        // Assert
         assertEquals(kycPage, response.getBody());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+
+    @Test
+    void updateStatus_shouldReturn204() {
+        String accountNumber = "1234567890";
+        String status = "ACTIVE";
+
+        ResponseEntity<Void> response = excelController.updateStatus(accountNumber, status);
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+    }
+
 }
