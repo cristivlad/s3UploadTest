@@ -59,8 +59,14 @@ public class ExcelController {
     }
 
     @PostMapping(value = "/accounts/{accountNumber}/move-files")
-    public ResponseEntity<Void> moveFilesToBank(@PathVariable String accountNumber) throws IllegalAccessException {
+    public ResponseEntity<Void> moveFilesToBank(@PathVariable String accountNumber) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         excelService.moveFilesToBank(accountNumber);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/accounts/{accountNumber}/generate-urls")
+    public ResponseEntity<KycDataDisplayFileUrlsDto> generateUrls(@PathVariable String accountNumber) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        var urls = excelService.generateUrls(accountNumber);
+        return ResponseEntity.ok(urls);
     }
 }

@@ -1,9 +1,8 @@
 package com.example.s3upload.excelparse;
 
-import com.amazonaws.services.s3.model.CopyObjectRequest;
-import com.amazonaws.services.s3.transfer.MultipleFileUpload;
 import com.example.s3upload.S3Utils;
 import jakarta.transaction.Transactional;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -269,6 +268,7 @@ public class ExcelService {
                     Field pictureUrlFieldObject = kycData.getClass().getDeclaredField(field.getName());
                     pictureUrlFieldObject.setAccessible(true);
                     pictureUrlFieldObject.set(kycData, pictureUrl);
+                    pictureUrlFieldObject.setAccessible(false);
                 } else {
                     Field kycInfoField = kycData.getClass().getDeclaredField(field.getName());
                     kycInfoField.setAccessible(true);
@@ -277,7 +277,7 @@ public class ExcelService {
                     } else {
                         kycInfoField.set(kycData, field.get(kycUpdateDto)) ;
                     }
-
+                    kycInfoField.setAccessible(false);
                 }
             } catch (IllegalAccessException | NoSuchFieldException e) {
                 throw new RuntimeException(e);
@@ -315,7 +315,7 @@ public class ExcelService {
         excelRepository.save(kycData);
     }
 
-    public void moveFilesToBank(String accountNumber) throws IllegalAccessException {
+    public void moveFilesToBank(String accountNumber) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         String sourceBucket = "testjavacode1";
         String destinationBucket = "newtestbucketlikebank";
         var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
@@ -324,11 +324,11 @@ public class ExcelService {
         for (var field : fields) {
             field.setAccessible(true);
             if (Arrays.stream(KycRemediationFiles.values()).anyMatch(val -> val.getValue().equals(field.getName()))) {
-                String fileUrl = (String) field.get(kycData);
+                String fileUrl = BeanUtils.getProperty(kycData, field.getName());
                 if (StringUtils.isNotBlank(fileUrl)) {
-                    int slashIndex = fileUrl.lastIndexOf('/');
-                    int questionIndex = fileUrl.lastIndexOf('?');
-                    String filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
+                    var slashIndex = fileUrl.lastIndexOf('/');
+                    var questionIndex = fileUrl.lastIndexOf('?');
+                    var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
 
                     var sourceFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
                     var destinationFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
@@ -337,5 +337,26 @@ public class ExcelService {
                 }
             }
         }
+    }
+
+    public KycDataDisplayFileUrlsDto generateUrls(String accountNumber) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var returnedObject = new KycDataDisplayFileUrlsDto();
+        var fields = returnedObject.getClass().getDeclaredFields();
+
+        for (var field : fields) {
+            if (Arrays.stream(KycRemediationFiles.values()).anyMatch(val -> val.getValue().equals(field.getName()))) {
+                    var fileUrl = BeanUtils.getProperty(kycData, field.getName());
+                    if (StringUtils.isNotBlank(fileUrl)) {
+                        var slashIndex = fileUrl.lastIndexOf('/');
+                        var questionIndex = fileUrl.lastIndexOf('?');
+                        var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
+                        var url = s3Utils.generatePresignedUrl("", accountNumber, "kyc-remediation", filename);
+
+                        BeanUtils.setProperty(returnedObject, field.getName(), url);
+                    }
+            }
+        }
+        return returnedObject;
     }
 }

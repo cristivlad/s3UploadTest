@@ -75,7 +75,7 @@ public class S3Utils {
         return fileUrl;
     }
 
-    private String generatePresignedUrl(String directoryPrefix, String customerId, String path, String filename) {
+    public String generatePresignedUrl(String directoryPrefix, String customerId, String path, String filename) {
         if (filename == null) {
             return null;
         }
