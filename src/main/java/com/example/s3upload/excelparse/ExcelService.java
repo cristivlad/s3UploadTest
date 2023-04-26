@@ -124,7 +124,7 @@ public class ExcelService {
                 .undertaking(getCellValue(row, 37).toString())
                 .startDate(startDate)
                 .submitDate(submitDate)
-                .status("PENDING")
+                .status("WAITING FOR VALIDATION")
                 .build());
     }
 
@@ -272,7 +272,7 @@ public class ExcelService {
                 } else {
                     Field kycInfoField = kycData.getClass().getDeclaredField(field.getName());
                     kycInfoField.setAccessible(true);
-                    kycInfoField.set(kycData, field.get(kycUpdateDto));
+                    kycInfoField.set(kycData, Boolean.valueOf(field.get(kycUpdateDto).toString()));
                 }
             } catch (IllegalAccessException | NoSuchFieldException e) {
                 throw new RuntimeException(e);

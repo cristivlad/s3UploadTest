@@ -18,7 +18,7 @@ public class KycUpdateDto {
     private String firstName;
     private String lastName;
     private String email;
-    private boolean uaeResident;
+    private String uaeResident;
     private String nationality;
     private String purposeOfAccount;
     private String monthlyIncome;
