@@ -272,7 +272,12 @@ public class ExcelService {
                 } else {
                     Field kycInfoField = kycData.getClass().getDeclaredField(field.getName());
                     kycInfoField.setAccessible(true);
-                    kycInfoField.set(kycData, Boolean.valueOf(field.get(kycUpdateDto).toString()));
+                    if ("uaeResident".equals(field.getName())) {
+                        kycInfoField.set(kycData, Boolean.valueOf(field.get(kycUpdateDto).toString()));
+                    } else {
+                        kycInfoField.set(kycData, field.get(kycUpdateDto)) ;
+                    }
+
                 }
             } catch (IllegalAccessException | NoSuchFieldException e) {
                 throw new RuntimeException(e);
