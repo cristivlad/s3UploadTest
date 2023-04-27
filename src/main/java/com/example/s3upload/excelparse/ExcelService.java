@@ -2,6 +2,7 @@ package com.example.s3upload.excelparse;
 
 import com.example.s3upload.S3Utils;
 import jakarta.transaction.Transactional;
+import org.apache.commons.beanutils.BeanAccessLanguageException;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -303,13 +304,7 @@ public class ExcelService {
         Method setterMethod = returnedObjectType.getMethod("set" + name.substring(0, 1).toUpperCase() + name.substring(1), String.class);
         Object propertyValue = getterMethod.invoke(kycData);
 
-        int slashIndex = propertyValue.toString().lastIndexOf('/');
-        int questionIndex = propertyValue.toString().lastIndexOf('?');
-        String filename = StringUtils.isBlank(propertyValue.toString()) ? "" : propertyValue.toString().substring(slashIndex + 1, questionIndex);
-
-        var deleteFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
-
-        s3Utils.deleteFile(deleteFileKey);
+        s3Utils.deleteFile(propertyValue.toString());
         setterMethod.invoke(kycData, "");
 
         excelRepository.save(kycData);
@@ -327,13 +322,11 @@ public class ExcelService {
                 String fileUrl = BeanUtils.getProperty(kycData, field.getName());
                 if (StringUtils.isNotBlank(fileUrl)) {
                     var slashIndex = fileUrl.lastIndexOf('/');
-                    var questionIndex = fileUrl.lastIndexOf('?');
-                    var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
+                    var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1);
 
-                    var sourceFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
                     var destinationFileKey = "kyc-remediation/" + accountNumber + "/" + filename;
 
-                    s3Utils.moveFile(sourceBucket, sourceFileKey, destinationBucket, destinationFileKey);
+                    s3Utils.moveFile(sourceBucket, fileUrl, destinationBucket, destinationFileKey);
                 }
             }
         }
@@ -349,8 +342,7 @@ public class ExcelService {
                     var fileUrl = BeanUtils.getProperty(kycData, field.getName());
                     if (StringUtils.isNotBlank(fileUrl)) {
                         var slashIndex = fileUrl.lastIndexOf('/');
-                        var questionIndex = fileUrl.lastIndexOf('?');
-                        var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1, questionIndex);
+                        var filename = StringUtils.isBlank(fileUrl) ? "" : fileUrl.substring(slashIndex + 1);
                         var url = s3Utils.generatePresignedUrl("", accountNumber, "kyc-remediation", filename);
 
                         BeanUtils.setProperty(returnedObject, field.getName(), url);
