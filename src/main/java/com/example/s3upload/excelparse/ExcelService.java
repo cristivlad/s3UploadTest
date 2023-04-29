@@ -11,6 +11,7 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -222,7 +223,7 @@ public class ExcelService {
     }
 
     public Page<KycOutDto> searchKyc(KycSearchCriteriaDto searchCriteria, int pageSize, int pageNo) {
-        Page<KycData> kycPage = excelRepository.findAll((root, query, cb) -> kycDataSpecification.kycSearchPredicate(searchCriteria, root, cb), PageRequest.of(pageNo, pageSize));
+        Page<KycData> kycPage = excelRepository.findAll((root, query, cb) -> kycDataSpecification.kycSearchPredicate(searchCriteria, root, cb), PageRequest.of(pageNo, pageSize, Sort.by("createdOn").descending()));
 
         return kycPage.map(kycEntity ->
                 KycOutDto.builder()
