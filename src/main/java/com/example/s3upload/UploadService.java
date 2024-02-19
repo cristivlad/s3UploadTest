@@ -81,4 +81,8 @@ public class UploadService {
         fileMetaRepository.findAll().forEach(metas::add);
         return metas;
     }
+
+    public String generateUrl(String filename) {
+        return s3Utils.generateUrl(filename);
+    }
 }

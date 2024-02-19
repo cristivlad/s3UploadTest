@@ -2,9 +2,10 @@ package com.example.s3upload.excelparse;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.stereotype.Service;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,6 +15,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+//@DynamicUpdate
+//@OptimisticLocking(type = OptimisticLockType.DIRTY)
 public class KycData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

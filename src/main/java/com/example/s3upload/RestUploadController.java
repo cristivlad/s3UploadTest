@@ -1,10 +1,7 @@
 package com.example.s3upload;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -28,5 +25,10 @@ public class RestUploadController {
     public ResponseEntity<Void> createCustomer(@RequestBody CustomerInput inputData) {
         customersService.saveCustomer(inputData);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/generate-url")
+    public ResponseEntity<String> generateUrl(@RequestParam("filename") String filename) {
+        return ResponseEntity.ok(uploadService.generateUrl(filename));
     }
 }

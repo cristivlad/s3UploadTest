@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+
+    <property name="now" value="now()" dbms="mysql"/>
+    <property name="autoincrement" value="true" dbms="mysql"/>
+    <property name="floatType" value="float" dbms="mysql"/>
+
+    <changeSet id="07_alter_kyc_data_add_version" author="Cristiii">
+        <addColumn tableName="kyc_data">
+            <column name="version" type="int"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

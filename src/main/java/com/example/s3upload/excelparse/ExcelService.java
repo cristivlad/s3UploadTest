@@ -1,7 +1,7 @@
 package com.example.s3upload.excelparse;
 
 import com.example.s3upload.S3Utils;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.OptimisticLockException;
 import org.apache.commons.beanutils.BeanAccessLanguageException;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,12 +9,20 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.datasource.init.DataSourceInitializer;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.sql.DataSource;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -240,15 +248,23 @@ public class ExcelService {
 
     @Transactional
     public void removeAccount(String accountNumber) {
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
 
         excelRepository.deleteById(kycData.getId());
     }
 
     @Transactional
+    public KycData saveKyc() {
+        KycData input = new KycData();
+        input.setAccountNumber("11");
+        input.setCity("bucuresti");
+        return excelRepository.save(input);
+    }
+
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public KycOutDto updateAccount(String accountNumber, KycUpdateDto kycUpdateDto) {
 
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
 
         Field[] fields = kycUpdateDto.getClass().getDeclaredFields();
         List<Field> fieldList = Arrays.stream(fields).filter(field -> {
@@ -258,7 +274,7 @@ public class ExcelService {
             } catch (IllegalAccessException e) {
                 return false;
             }
-        }).collect(Collectors.toList());
+        }).toList();
 
         for (Field field : fieldList) {
             try {
@@ -284,21 +300,25 @@ public class ExcelService {
                 throw new RuntimeException(e);
             }
         }
+        try {
 
-        excelRepository.save(kycData);
+            excelRepository.save(kycData);
+        } catch (OptimisticLockException e) {
+            throw new RuntimeException("The account has been updated by another user. Please refresh the page and try again.");
+        }
 
         return null;
     }
 
     public void updateStatus(String accountNumber, String status) {
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
 
         kycData.setStatus(status);
         excelRepository.save(kycData);
     }
 
     public void removeFile(String accountNumber, String name) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
         Class<?> returnedObjectType = kycData.getClass();
         Method getterMethod = returnedObjectType.getMethod("get" + name.substring(0, 1).toUpperCase() + name.substring(1));
         Method setterMethod = returnedObjectType.getMethod("set" + name.substring(0, 1).toUpperCase() + name.substring(1), String.class);
@@ -313,7 +333,7 @@ public class ExcelService {
     public void moveFilesToBank(String accountNumber) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         String sourceBucket = "testjavacode1";
         String destinationBucket = "newtestbucketlikebank";
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
 
         Field[] fields = kycData.getClass().getDeclaredFields();
         for (var field : fields) {
@@ -333,7 +353,7 @@ public class ExcelService {
     }
 
     public KycDataDisplayFileUrlsDto generateUrls(String accountNumber) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        var kycData = excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+        var kycData = getAccountNotFound(accountNumber);
         var returnedObject = new KycDataDisplayFileUrlsDto();
         var fields = returnedObject.getClass().getDeclaredFields();
 
@@ -351,4 +371,10 @@ public class ExcelService {
         }
         return returnedObject;
     }
+
+    public KycData getAccountNotFound(String accountNumber) {
+        return excelRepository.findByAccountNumber(accountNumber).orElseThrow(() -> new DataNotFoundException("Account not found"));
+    }
+
+
 }

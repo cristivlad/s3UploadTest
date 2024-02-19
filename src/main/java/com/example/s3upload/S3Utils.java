@@ -16,6 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -105,6 +107,23 @@ public class S3Utils {
             log.error(sce.getMessage(), sce);
             throw new RuntimeException(sce);
         }
+    }
+
+    public String generateUrl(String objectName) {
+        if (objectName == null) {
+            return null;
+        }
+
+        String keyUrl = bucketName + "/" + objectName;
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiration = now.toLocalDate().atTime(LocalTime.MAX);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest("", keyUrl)
+                        .withMethod(com.amazonaws.HttpMethod.GET)
+                        .withExpiration(java.sql.Timestamp.valueOf(expiration));
+        URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+        return url.toString();
     }
 
     private void uploadFileToS3Bucket(String filenameWithPath, File file) {
