@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Service;
@@ -230,7 +231,7 @@ public class ExcelService {
     }
 
     public Page<KycOutDto> searchKyc(KycSearchCriteriaDto searchCriteria, int pageSize, int pageNo) {
-        Page<KycData> kycPage = excelRepository.findAll((root, query, cb) -> kycDataSpecification.kycSearchPredicate(searchCriteria, root, cb), PageRequest.of(pageNo, pageSize));
+        Page<KycData> kycPage = excelRepository.findAll((root, query, cb) -> kycDataSpecification.kycSearchPredicate(searchCriteria, root, cb), PageRequest.of(pageNo, pageSize, Sort.by("createdOn").descending()));
 
         return kycPage.map(kycEntity ->
                 KycOutDto.builder()
