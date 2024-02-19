@@ -96,12 +96,12 @@
             <version>1.16.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-optimizer</artifactId>
-            <version>${hypersistence-optimizer.version}</version>
-            <classifier>jakarta</classifier>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.hypersistence</groupId>-->
+<!--            <artifactId>hypersistence-optimizer</artifactId>-->
+<!--            <version>${hypersistence-optimizer.version}</version>-->
+<!--            <classifier>jakarta</classifier>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
